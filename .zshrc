@@ -44,9 +44,9 @@ alias unpk='tar xzf'
 alias emacs='/Applications/Emacs.app/Contents/MacOS/Emacs -nw'
 alias glg="git log --graph --abbrev-commit --decorate --date=relative --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(auto)%d%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
 # Convenience user functions
-ec () { /Applications/Emacs.app/Contents/MacOS/bin/emacsclient $* }
-be () { bundle exec "$@" }
-br () { bundle exec rake $* }
+ec () { /Applications/Emacs.app/Contents/MacOS/bin/emacsclient $*; }
+be () { bundle exec "$@"; }
+br () { bundle exec rake $*; }
 alias berc='be rails console'
 alias bers='be rails server'
 alias dia /Applications/Dia.app/Contents/Resources/bin/dia
