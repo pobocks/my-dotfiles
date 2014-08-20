@@ -26,6 +26,8 @@
  '(blink-cursor-mode nil)
  '(column-number-mode t)
  '(echo-keystrokes 0.1)
+ '(emmet-indentation 2)
+ '(emmet-preview-default nil)
  '(enable-recursive-minibuffers t)
  '(inhibit-startup-screen t)
  '(jira-url "https://jira.huit.harvard.edu/rpc/xmlrpc")
@@ -188,15 +190,22 @@ Added: %U"))))
 (mapc (lambda (package)
         (or (package-installed-p package)
             (package-install package)))
-      '(ace-jump-mode ack-and-a-half ack-menu ag browse-kill-ring creole dash db deft diminish el-x elnode elscreen emmet-mode evil exec-path-from-shell fakir feature-mode findr flx-ido git-commit-mode git-rebase-mode goto-chg goto-last-change haml-mode helm helm-ag helm-cmd-t htmlize iedit inf-ruby inflections jabber jira jump kv lacarte mag-menu magit markdown-mode markdown-mode+ melpa minimap mode-compile multiple-cursors noflet org-plus-contrib pcre2el php-mode powerline rainbow-delimiters rinari robe ruby-compilation rvm s scss-mode show-css smartscan smex splitter undo-tree vline web web-mode wgrep wgrep-ack wgrep-ag xml-rpc yaml-mode yasnippet))
+      '(ace-jump-mode ack-and-a-half ack-menu ag browse-kill-ring creole dash db deft diminish el-x elnode elscreen emmet-mode evil exec-path-from-shell fakir feature-mode findr flx-ido git-commit-mode git-rebase-mode goto-chg goto-last-change haml-mode helm helm-ag helm-cmd-t htmlize iedit inf-ruby inflections jabber jira jump kv lacarte mag-menu magit markdown-mode markdown-mode+ minimap multiple-cursors noflet org-plus-contrib package-utils pcre2el php-mode powerline rainbow-delimiters rinari robe ruby-compilation rvm s scss-mode show-css smartscan smex splitter undo-tree vline web web-mode wgrep wgrep-ack wgrep-ag xml-rpc yaml-mode yasnippet))
 ;;; End package.el related code
 
 (powerline-default-theme) ;; Do after packages
 (rvm-use-default)
 (add-to-list 'auto-mode-alist '("\\.erb\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.rake\\'" . ruby-mode))
 (global-smartscan-mode t)
 (defun suppress-smartscan () (smartscan-mode -1))
 (add-hook 'comint-mode-hook 'suppress-smartscan)
+(add-hook 'magit-mode-hook 'suppress-smartscan)
+
+(add-hook 'sgml-mode-hook 'emmet-mode) ;; Auto-start on any markup modes
+(add-hook 'html-mode-hook 'emmet-mode)
+(add-hook 'css-mode-hook 'emmet-mode)
+(add-hook 'web-mode-hook 'emmet-mode)
 
 ;; (global-undo-tree-mode t)
 ;; (diminish 'undo-tree-mode)
@@ -231,7 +240,10 @@ Added: %U"))))
 (when (memq window-system '(mac ns))
   (exec-path-from-shell-initialize)
   (global-set-key (kbd "C-z") nil) ;; Stop minimize
-)
+  ;; Use coreutils version of ls if available for --dired
+  (when (= (shell-command "type gls") 0)
+    (setq ls-lisp-use-insert-directory-program t)
+    (setq insert-directory-program "gls")))
 
 (global-rainbow-delimiters-mode t) ;; Pretty Colors!
 
@@ -588,6 +600,9 @@ Added: %U"))))
 ;; Kill line refinements
 (global-set-key (kbd "C-S-k") (lambda () (interactive) (kill-line 0) (indent-for-tab-command)))
 (global-set-key (kbd "C-x r M-k") 'copy-rectangle-as-kill)
+
+;; Kill word backward
+(global-set-key (kbd "M-D") (lambda (arg) (interactive "p") (kill-word (- arg))))
 
 ;; Note: the below is fragile.  M-S-k doesn't work, and in a terminal, only the last one is defined
 (global-set-key (kbd "M-K") (lambda () (interactive) (kill-ring-save (line-beginning-position) (point))
