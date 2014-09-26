@@ -245,7 +245,7 @@ Added: %U"))))
     (setq ls-lisp-use-insert-directory-program t)
     (setq insert-directory-program "gls")))
 
-(global-rainbow-delimiters-mode t) ;; Pretty Colors!
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode) ;; Pretty Colors!
 
 (require 'cl)
 (require 's)
@@ -587,7 +587,6 @@ Added: %U"))))
 
 (global-set-key (kbd "<C-return>") 'open-line-below)
 (global-set-key (kbd "<C-S-return>") 'open-line-above)
-
 
 (global-set-key (kbd "C-%") 'replace-string)
 
