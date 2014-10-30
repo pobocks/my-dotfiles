@@ -28,6 +28,7 @@
  '(echo-keystrokes 0.1)
  '(emmet-indentation 2)
  '(emmet-preview-default nil)
+ '(emmet-move-cursor-between-quotes t)
  '(enable-recursive-minibuffers t)
  '(inhibit-startup-screen t)
  '(jira-url "https://jira.huit.harvard.edu/rpc/xmlrpc")
@@ -59,7 +60,7 @@ Added: %U"))))
 (setq locate-command "mdfind")
 
 (add-to-list 'load-path "/usr/local/share/emacs/site-lisp")
-(add-to-list 'load-path "~/.emacs.d/")
+(add-to-list 'load-path "~/.emacs.d/lisp")
 
 (setq user-full-name "Dave Mayo"
       user-mail-address "dave_mayo@harvard.edu")
@@ -124,7 +125,7 @@ Added: %U"))))
 ;(set-face-attribute 'default nil :family "Droid Sans Mono Slashed" :height 140 :weight 'normal)
 ;(set-face-attribute 'default nil :family "Inconsolata" :height 150 :weight 'normal)
 (set-face-attribute 'default nil :family "Source Code Pro" :height 125 :weight 'normal)
-(set-fontset-font "fontset-default" 'unicode "Monaco")
+;;(set-fontset-font "fontset-default" 'unicode "Nota Sans")
 
 ; Stop forcing me to spell out "yes"
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -292,9 +293,6 @@ Added: %U"))))
 (cua-mode 0)
 (transient-mark-mode 0)
 
-(require 'uniquify)
-(setq uniquify-buffer-name-style 'forward)
-
 (setq find-ls-option '("-print0 | xargs -0 ls -ld" . "-ld"))
 
 (defun show-file-name ()
@@ -378,8 +376,6 @@ Added: %U"))))
 (require 'emacsd-tile)
 
 (require 'outline)
-;(setq load-path (cons "~/.emacs.d/org/lisp" load-path))
-;(setq load-path (cons "~/.emacs.d/org/contrib/lisp" load-path))
 (require 'org-install)
 
 (defun org-export-latex-no-toc (depth)
@@ -597,7 +593,17 @@ Added: %U"))))
 (global-set-key (kbd "C-x SPC") 'pop-to-mark-command)
 
 ;; Kill line refinements
-(global-set-key (kbd "C-S-k") (lambda () (interactive) (kill-line 0) (indent-for-tab-command)))
+;; Still not ideal - needs re-tabbing after yank
+(defun dave-backwards-kill () (interactive)
+  (let* ((beg (save-excursion (beginning-of-line) (point)))
+         (end (save-excursion (end-of-line) (point)))
+         (line (buffer-substring-no-properties beg end))
+         (blank (string-match-p "^\\(\\s-+\\)?$" line)))
+    (if blank
+        (kill-whole-line -1)
+      (progn (kill-line 0) (indent-for-tab-command)))))
+
+(global-set-key (kbd "C-S-k") 'dave-backwards-kill)
 (global-set-key (kbd "C-x r M-k") 'copy-rectangle-as-kill)
 
 ;; Kill word backward
