@@ -25,25 +25,71 @@
  '(backup-by-copying-when-linked t)
  '(blink-cursor-mode nil)
  '(column-number-mode t)
+ '(current-language-environment "UTF-8")
  '(echo-keystrokes 0.1)
  '(emmet-indentation 2)
- '(emmet-preview-default nil)
  '(emmet-move-cursor-between-quotes t)
  '(enable-recursive-minibuffers t)
  '(inhibit-startup-screen t)
- '(jira-url "https://jira.huit.harvard.edu/rpc/xmlrpc")
+ '(markdown-command "marked --gfm")
  '(minibuffer-depth-indicate-mode t)
- '(org-capture-templates (quote (("n" "Notes" entry (file+datetree "~/.emacs.d/orgnotes.org") "* %^{Description} %^g %?
-Added: %U"))))
+ '(org-capture-templates
+   '(("n" "Notes" entry
+      (file+datetree "~/.emacs.d/orgnotes.org")
+      "* %^{Description} %^g %?
+Added: %U")))
  '(org-src-fontify-natively t)
- '(reb-re-syntax (quote string))
+ '(package-selected-packages
+   '(lsp-mode rust-mode rust-playground rustic docker-compose-mode docker-tramp dockerfile-mode org elpy nyan-mode tide typescript-mode rg expand-region ack-menu ag browse-kill-ring cider clojure-mode creole dash db deft diminish easy-escape el-x elnode elscreen emmet-mode evil exec-path-from-shell git-commit fakir feature-mode findr flx-ido goto-chg goto-last-change haml-mode html5-schema htmlize iedit inf-ruby inflections jabber jump kv lacarte mag-menu magit markdown-mode markdown-mode+ markdown-preview-mode minimap multiple-cursors noflet nvm org-plus-contrib package-utils pcre2el perl6-mode php-mode powerline rainbow-delimiters rinari robe ruby-compilation rvm s scss-mode show-css smartscan smex splitter undo-tree vline web web-mode wgrep wgrep-ack wgrep-ag xml-rpc xquery-mode yaml-mode yasnippet))
+ '(reb-re-syntax 'string)
+ '(safe-local-variable-values
+   '((js-indent-level . 2)
+     (typescript-indent-level . 2)
+     (standard-indent . 4)
+     (encoding . utf-8)
+     (ruby-compilation-executable . "ruby")
+     (ruby-compilation-executable . "ruby1.8")
+     (ruby-compilation-executable . "ruby1.9")
+     (ruby-compilation-executable . "rbx")
+     (ruby-compilation-executable . "jruby")))
  '(save-place-file "~/.emacs.d/saved-places")
- '(show-paren-mode t)
+ '(tls-checktrust t)
  '(tool-bar-mode nil)
+ '(transient-mark-mode nil)
  '(wdired-allow-to-change-permissions t)
- '(wdired-confirm-overwrite t)
- '(minibuffer-depth-indicate-mode t)
- )
+ '(wdired-confirm-overwrite t))
+
+(set-language-environment "UTF-8")
+(prefer-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(setq default-process-coding-system '(utf-8 . utf-8))
+
+(setq default-directory "~/")
+(setq command-line-default-directory "~/")
+
+(if (boundp 'buffer-file-coding-system)
+    (setq-default buffer-file-coding-system 'utf-8)
+  (setq default-buffer-file-coding-system 'utf-8))
+
+(setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
+
+;; TLS Trustfile setup
+(let ((trustfile
+       (replace-regexp-in-string
+        "\\\\" "/"
+        (replace-regexp-in-string
+         "\n" ""
+         (shell-command-to-string "python -m certifi")))))
+  (setq tls-program
+        (list
+         (format "gnutls-cli%s --x509cafile %s -p %%p %%h"
+                 (if (eq window-system 'w32) ".exe" "") trustfile))))
+
+;; Suppress warning about magit-auto-revert-mode
+;;   disable setting is: (setq magit-auto-revert-mode nil)
+;(setq magit-last-seen-setup-instructions "1.4.0")
 
 (add-hook 'dired-load-hook
           (lambda ()
@@ -125,7 +171,7 @@ Added: %U"))))
 ;(set-face-attribute 'default nil :family "Droid Sans Mono Slashed" :height 140 :weight 'normal)
 ;(set-face-attribute 'default nil :family "Inconsolata" :height 150 :weight 'normal)
 (set-face-attribute 'default nil :family "Source Code Pro" :height 125 :weight 'normal)
-;;(set-fontset-font "fontset-default" 'unicode "Nota Sans")
+(set-fontset-font "fontset-default" 'unicode "Symbola")
 
 ; Stop forcing me to spell out "yes"
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -185,19 +231,30 @@ Added: %U"))))
 (add-hook 'package-menu-mode-hook 'buffer-disable-undo)
 
 ;;; package.el related code
-(setq package-archives '(("melpa" . "http://melpa.milkbox.net/packages/")
-                         ("org" . "http://orgmode.org/elpa/")))
+(setq package-archives '(("melpa" . "http://melpa.org/packages/")
+                         ("gnu" . "http://elpa.gnu.org/packages/")
+                         ))
+
 (package-initialize)
-(mapc (lambda (package)
-        (or (package-installed-p package)
-            (package-install package)))
-      '(ace-jump-mode ack-and-a-half ack-menu ag browse-kill-ring creole dash db deft diminish el-x elnode elscreen emmet-mode evil exec-path-from-shell fakir feature-mode findr flx-ido git-commit-mode git-rebase-mode goto-chg goto-last-change haml-mode helm helm-ag helm-cmd-t htmlize iedit inf-ruby inflections jabber jira jump kv lacarte mag-menu magit markdown-mode markdown-mode+ minimap multiple-cursors noflet org-plus-contrib package-utils pcre2el php-mode powerline rainbow-delimiters rinari robe ruby-compilation rvm s scss-mode show-css smartscan smex splitter undo-tree vline web web-mode wgrep wgrep-ack wgrep-ag xml-rpc yaml-mode yasnippet))
+(package-install-selected-packages)
 ;;; End package.el related code
 
+(require 'powerline)
 (powerline-default-theme) ;; Do after packages
+
+(require 'magit) ;; Explicit require to prevent issue where commits end up in fundamental mode if magit hasn't run yet
+
+(require 'nvm)
+(nvm-use "v4.0.0")
+
 (rvm-use-default)
+(add-to-list 'auto-mode-alist '("\\.html\\'" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.erb\\'" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.rake\\'" . ruby-mode))
+(add-to-list 'auto-mode-alist '("Rakefile\\'" . ruby-mode))
+(add-to-list 'auto-mode-alist '("\\.md\\'" . gfm-mode))
+(add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
+
 (global-smartscan-mode t)
 (defun suppress-smartscan () (smartscan-mode -1))
 (add-hook 'comint-mode-hook 'suppress-smartscan)
@@ -208,37 +265,15 @@ Added: %U"))))
 (add-hook 'css-mode-hook 'emmet-mode)
 (add-hook 'web-mode-hook 'emmet-mode)
 
+;; Make elisp regex non-terribad to read
+(add-hook 'emacs-lisp-mode-hook 'easy-escape-minor-mode)
+
 ;; (global-undo-tree-mode t)
 ;; (diminish 'undo-tree-mode)
 
-(require 'helm-cmd-t)
-(helm-mode t)
-(diminish 'helm-mode)
-
-(defvar my-mini-folders (list  "~/" "~/Inscriptio")
-  "my permanent folders for helm-mini")
-
-(defun helm-my-mini (&optional arg)
-  "my helm-mini.  Use C-u arg to work with repos."
-  (interactive "P")
-  (if (consp arg)
-      (call-interactively 'helm-cmd-t-repos)
-    (let ((helm-ff-transformer-show-only-basename nil))
-      (helm :sources (nconc (list
-                             helm-source-buffers-list
-                             helm-source-recentf)
-                            (mapcar (lambda (dir)
-                                      (helm-cmd-t-get-create-source-dir dir))
-                                    my-mini-folders)
-                            (list
-                             helm-source-buffer-not-found)
-                            )
-            :candidate-number-limit 20
-            :buffer "*helm-my-mini:*"))))
-
-(global-set-key (kbd "H-x H-f") 'helm-my-mini)
-
 (when (memq window-system '(mac ns))
+  (mapcar #'exec-path-from-shell-copy-env
+	  '("LANG" "LC_ALL"))
   (exec-path-from-shell-initialize)
   (global-set-key (kbd "C-z") nil) ;; Stop minimize
   ;; Use coreutils version of ls if available for --dired
@@ -271,7 +306,8 @@ Added: %U"))))
 (require 'wgrep)
 (require 'wgrep-ag)
 
-(setq vc-handled-backends nil)
+(require 'guess-style)
+
 (setq c-default-style
       `((other . "k&r")))
 (setq-default indent-tabs-mode nil)
@@ -279,13 +315,20 @@ Added: %U"))))
 (setq-default tab-stop-list (list 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54))
 (setq-default standard-indent 2)
 (setq-default c-basic-offset 2)
+(setq-default typescript-indent-level 2)
 (c-set-offset 'case-label '+)
 (c-set-offset 'arglist-close 'c-lineup-arglist-operators)
 (c-set-offset 'arglist-intro '+) ; for FAPI arrays and DBTNG
 (c-set-offset 'arglist-cont-nonempty 'c-lineup-math)
 (setq js-indent-level 2)
 
-(setq ns-right-alternate-modifier nil)
+(add-hook 'python-mode-hook 'guess-style-guess-tabs-mode)
+(add-hook 'python-mode-hook (lambda ()
+                              (when indent-tabs-mode
+                                (guess-style-guess-tab-width))))
+
+(setq mac-right-option-modifier nil)
+(setq mac-option-modifier 'meta)
 
 (require 'find-dired)
 (setq find-ls-option '("-print0 | xargs -0 ls -ld" . "-ld"))
@@ -301,8 +344,8 @@ Added: %U"))))
   (message (buffer-file-name)))
 (global-set-key (kbd "H-f") 'show-file-name)
 
-(setq grep-command "grep -nHP -e "
-      grep-find-template "find . <X> -type f <F> -exec grep <C> -nHP -e <R> {} /dev/null \\;")
+(setq grep-command "ggrep -nHP -e "
+      grep-find-template "find . <X> -type f <F> -exec ggrep <C> -nHP -e <R> {} /dev/null \\;")
 (defun grep-occur (regexp &optional nlines)
   (interactive (occur-read-primary-args))
   (save-some-buffers)
@@ -316,67 +359,65 @@ Added: %U"))))
                 (buffer-file-name))))
 (winner-mode 1)
 
-(setq-default ns-right-control-modifier 'hyper)
-
-(global-set-key (kbd "H-SPC") 'ace-jump-mode)
-(global-set-key (kbd "H-S-SPC") 'ace-jump-line-mode)
+(setq-default mac-right-control-modifier 'hyper)
 
 ;(defun hyperspace () (interactive) (progn (find-file "/scpc:qs2970.pair.com:~/public_html/genarts-davemayo")(message "Engage!")))
 ;(global-set-key (kbd "H-SPC") 'hyperspace)
 
-(require 'vc-git)
+;; MozRepl stuff commented out for the moment because it ain't work no mo
+;; (autoload 'moz-minor-mode "moz" "Mozilla Minor and Inferior Mozilla Modes" t)
+;; (moz-minor-mode 1)
+;; (defvar browser-y-offset 0)
+;; (defun get-browser-offset (output) (if (not (= (string-to-number output) 0))
+;;                                        (setq browser-y-offset (string-to-number output))) output)
+;; (add-hook 'comint-preoutput-filter-functions 'get-browser-offset)
+;; (global-set-key (kbd "H-v")
+;;                 (lambda () (interactive)
+;;                   (comint-send-string (inferior-moz-process) "window.content.scrollByPages(1);")))
+;; (global-set-key (kbd "H-V")
+;;                 (lambda () (interactive)
+;;                   (comint-send-string (inferior-moz-process) "window.content.scrollByPages(-1);")))
+;; (global-set-key (kbd "H-n")
+;;                 (lambda (arg) (interactive "p")
+;;                   (comint-send-string
+;;                    (inferior-moz-process)
+;;                    (concat "for (var i = 0;i < " (number-to-string (abs arg)) "; i++) {gBrowser.tabContainer.advanceSelectedTab(1, true);}"))))
+;; (global-set-key (kbd "H-p")
+;;                 (lambda (arg) (interactive "p")
+;;                   (comint-send-string
+;;                    (inferior-moz-process)
+;;                    (concat "for (var i = 0; i < " (number-to-string (abs arg)) "; i++) {gBrowser.tabContainer.advanceSelectedTab(-1, true);}"))))
+;; (global-set-key (kbd "H-g")
+;;                 (lambda () (interactive)
+;;                   (comint-send-string
+;;                    (inferior-moz-process)
+;;                    (concat "window.content.location.href='"
+;;                            (let ((x (read-from-minibuffer "Go To: ")))
+;;                              (if (string= (substring x 0 7) "http://")
+;;                                  x
+;;                                (concat "http://" x))) "';"))))
 
-(autoload 'moz-minor-mode "moz" "Mozilla Minor and Inferior Mozilla Modes" t)
-(moz-minor-mode 1)
-(defvar browser-y-offset 0)
-(defun get-browser-offset (output) (if (not (= (string-to-number output) 0))
-                                       (setq browser-y-offset (string-to-number output))) output)
-(add-hook 'comint-preoutput-filter-functions 'get-browser-offset)
-(global-set-key (kbd "H-v")
-                (lambda () (interactive)
-                  (comint-send-string (inferior-moz-process) "window.content.scrollByPages(1);")))
-(global-set-key (kbd "H-V")
-                (lambda () (interactive)
-                  (comint-send-string (inferior-moz-process) "window.content.scrollByPages(-1);")))
-(global-set-key (kbd "H-n")
-                (lambda (arg) (interactive "p")
-                  (comint-send-string
-                   (inferior-moz-process)
-                   (concat "for (var i = 0;i < " (number-to-string (abs arg)) "; i++) {gBrowser.tabContainer.advanceSelectedTab(1, true);}"))))
-(global-set-key (kbd "H-p")
-                (lambda (arg) (interactive "p")
-                  (comint-send-string
-                   (inferior-moz-process)
-                   (concat "for (var i = 0; i < " (number-to-string (abs arg)) "; i++) {gBrowser.tabContainer.advanceSelectedTab(-1, true);}"))))
-(global-set-key (kbd "H-g")
-                (lambda () (interactive)
-                  (comint-send-string
-                   (inferior-moz-process)
-                   (concat "window.content.location.href='"
-                           (let ((x (read-from-minibuffer "Go To: ")))
-                             (if (string= (substring x 0 7) "http://")
-                                 x
-                               (concat "http://" x))) "';"))))
+;; (global-set-key (kbd "s-r")
+;;                 (lambda () (interactive)
+;;                   (comint-send-string (inferior-moz-process) "BrowserReload();")))
+;; (global-set-key (kbd "s-R")
+;;                 (lambda () (interactive)
+;;                   (comint-send-string (inferior-moz-process) "window.content.pageYOffset;")
+;;                   (let ((local-y browser-y-offset))
+;;                     (message (number-to-string local-y))
+;;                     (comint-send-string
+;;                      (inferior-moz-process) "BrowserReloadWithFlags([nsIWebNavigation.LOAD_FLAGS_BYPASS_CACHE]);")
+;;                     (sit-for 5)
+;;                     (comint-send-string
+;;                      (inferior-moz-process) (concat "window.content.scrollTo(0," (number-to-string local-y) ");"))
+;;                     )))
 
-(global-set-key (kbd "s-r")
-                (lambda () (interactive)
-                  (comint-send-string (inferior-moz-process) "BrowserReload();")))
-(global-set-key (kbd "s-R")
-                (lambda () (interactive)
-                  (comint-send-string (inferior-moz-process) "window.content.pageYOffset;")
-                  (let ((local-y browser-y-offset))
-                    (message (number-to-string local-y))
-                    (comint-send-string
-                     (inferior-moz-process) "BrowserReloadWithFlags([nsIWebNavigation.LOAD_FLAGS_BYPASS_CACHE]);")
-                    (sit-for 5)
-                    (comint-send-string
-                     (inferior-moz-process) (concat "window.content.scrollTo(0," (number-to-string local-y) ");"))
-                    )))
 (require 'windmove)
 (require 'emacsd-tile)
 
 (require 'outline)
 (require 'org-install)
+(require 'ob-ruby)
 
 (defun org-export-latex-no-toc (depth)
     (when depth
@@ -399,22 +440,26 @@ Added: %U"))))
                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))))
 
-;; Kill server buffers just like regular buffers
+;; Kill server buffers just like regular buffers and preserve *scratch*
 (global-set-key (kbd "C-x k")
                 (lambda ()
                   (interactive)
-                  (if server-buffer-clients
-                      (server-edit)
-                    (kill-this-buffer))))
+                  (if (not (string= (buffer-name) "*scratch*"))
+                      (if server-buffer-clients
+                          (server-edit)
+                        (kill-this-buffer))
+                    (when (y-or-n-p-with-timeout "Really kill scratch? " 5 nil)
+                      (kill-this-buffer)))))
 
 (load "server")
 (unless (server-running-p) (server-start))
 
 ;; Deft
-(setq deft-use-filename-as-title t)
+(setq deft-use-filter-string-for-filename t)
 (define-minor-mode deft-note-mode "Deft notes" nil " Deft-Notes" nil)
-(setq deft-text-mode 'deft-note-mode)
-(setq deft-extension "org")
+(add-hook 'org-mode-hook (lambda () (and (string-match "\\.deft" (buffer-file-name)) (deft-note-mode t) (visual-line-mode t))))
+
+(setq deft-extensions '("org"))
 (defun kill-all-deft-notes ()
   (interactive)
   (save-excursion
@@ -459,7 +504,6 @@ Added: %U"))))
 (setq ido-enable-flex-matching t)
 (setq ido-everywhere t)
 (setq ido-create-new-buffer 'always)
-(add-to-list 'ido-ignore-buffers "^\*helm.*")
 (add-to-list 'ido-ignore-buffers "^\*Messages\*")
 (global-set-key (kbd "C-x 4 C-f") 'ido-find-file-other-window)
 
@@ -473,6 +517,16 @@ Added: %U"))))
 
 ;Tab expands in eval-expression
 (define-key read-expression-map (kbd "TAB") 'lisp-complete-symbol)
+
+;; Wgrep bindings
+(eval-after-load 'rg
+  '(progn (define-key rg-mode-map (kbd "C-c w")
+            'wgrep-change-to-wgrep-mode)
+          (define-key wgrep-mode-map (kbd "C-c s")
+            (lambda ()
+              (interactive)
+              (wgrep-finish-edit)
+              (wgrep-save-all-buffers)))))
 
 ;Occur keybinding in isearch
 (define-key isearch-mode-map (kbd "C-o")
@@ -525,7 +579,7 @@ Added: %U"))))
 (defun turn-off-auto-fill () (interactive) (auto-fill-mode -1))
 (setq text-mode-hook (append text-mode-hook '(turn-off-auto-fill)))
 (require 'which-func)
-(add-to-list 'which-func-modes 'php-mode)
+;(add-to-list 'which-func-modes 'php-mode)
 
 ;; Delete trailing whitespace - disable for deft to avoid being flustered by autosave
 (defun delete-trailing-except-deft () (interactive) (when (eq nil deft-note-mode) (delete-trailing-whitespace)))
@@ -540,7 +594,7 @@ Added: %U"))))
              (tramp-parse-sconfig "~/.ssh/config")))
 
 (setq scss-compile-at-save nil)
-(setq scss-sass-command "/Users/pobocks/.rvm/gems/ruby-1.9.3-p327/bin/sass")
+(setq scss-sass-command "/Users/pobocks/.rvm/gems/ruby-2.1.1/bin/sass")
 (require 'snippet)
 (require 'rinari)
 ;;(global-rinari-mode)
@@ -566,6 +620,7 @@ Added: %U"))))
 (global-set-key (kbd "M-/") 'hippie-expand) ;; Trying out hippie-expand
 (global-set-key (kbd "RET") 'newline-and-indent)
 (global-set-key (kbd "M-RET") 'newline)
+(global-set-key (kbd "C-=") 'er/expand-region)
 
 ;; Open line funcs
 (defun open-line-below ()
@@ -659,3 +714,93 @@ point reaches the beginning or end of the buffer, stop there."
 ;; remap C-a to `smarter-move-beginning-of-line'
 (global-set-key [remap move-beginning-of-line]
                 'smarter-move-beginning-of-line)
+
+
+;; Org stuff from https://gist.github.com/zph/7c1bf24fdfcd5abe24ec#file-zph-org-agenda-el-L100-L126
+(setq org-log-done 'time)
+;; (setq org-log-done 'note)
+;;(add-hook 'org-todo 'mrb/insert-created-timestamp)
+;;; Credit: http://doc.norang.ca/org-mode.html#InsertInactiveTimestamps
+(defvar bh/insert-inactive-timestamp t)
+
+(defun bh/toggle-insert-inactive-timestamp ()
+  (interactive)
+  (setq bh/insert-inactive-timestamp (not bh/insert-inactive-timestamp))
+  (message "Heading timestamps are %s" (if bh/insert-inactive-timestamp "ON" "OFF")))
+
+(defun bh/insert-inactive-timestamp ()
+  (interactive)
+  (org-insert-time-stamp nil t t nil nil nil))
+
+(defun bh/insert-heading-inactive-timestamp ()
+(save-excursion
+  (when bh/insert-inactive-timestamp
+    (org-return)
+    (org-cycle)
+    (bh/insert-inactive-timestamp))))
+
+;;(add-hook 'org-insert-heading-hook 'bh/insert-heading-inactive-timestamp 'append)
+
+
+;; TODO: HACK, clean up code & remove duplication
+(add-hook 'org-insert-heading-hook 'mrb/insert-created-timestamp 'append)
+;; M-/ in nXML-mode should be nxml-complete
+(eval-after-load 'nxml-mode
+  '(define-key nxml-mode-map (kbd "M-/") 'nxml-complete))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; edit source blocks in markdown
+
+
+(defvar plexus/restore-mode-map (make-sparse-keymap)
+  "Keymap while plexus/restore-mode is active.")
+
+(define-minor-mode plexus/restore-mode
+  "A temporary minor mode to go back to the markdown you're editing"
+  nil
+  :lighter " ♻"
+  plexus/restore-mode-map)
+
+
+(defun plexus/edit-md-source-block ()
+  (interactive)
+  (let ((buffer nil))
+    (save-excursion
+      (re-search-backward "\n``` ?\[a-z- \]+\n")
+      (re-search-forward "\n``` *")
+      (let ((lang (thing-at-point 'word))
+            (md-buffer (current-buffer)))
+        (forward-line)
+        (let ((start (point)))
+          (re-search-forward "\n```")
+          (let* ((end (- (point) 4))
+                 (source (buffer-substring-no-properties start end)))
+            (setq buffer (get-buffer-create (concat "*markdown-" lang "*")))
+            (set-buffer buffer)
+            (erase-buffer)
+            (insert source)
+            (setq restore-start start)
+            (setq restore-end end)
+            (setq restore-buffer md-buffer)
+            (make-local-variable 'restore-start)
+            (make-local-variable 'restore-end)
+            (make-local-variable 'restore-buffer)
+            (funcall (intern (concat lang "-mode")))))))
+    (switch-to-buffer buffer)
+    (plexus/restore-mode 1)))
+
+
+(defun plexus/restore-md-source-block ()
+  (interactive)
+  (let ((contents (buffer-string)))
+    (save-excursion
+      (set-buffer restore-buffer)
+      (delete-region restore-start restore-end)
+      (goto-char restore-start)
+      (insert contents)))
+  (switch-to-buffer restore-buffer))
+(eval-after-load 'markdown-mode
+  '(progn
+     (define-key gfm-mode-map (kbd "C-c C-e") 'plexus/edit-md-source-block)
+     (define-key plexus/restore-mode-map (kbd "C-c C-e") 'plexus/restore-md-source-block)))
+(put 'downcase-region 'disabled nil)
